@@ -24,7 +24,7 @@ const QuickLog = ({ onAddMeal }) => {
   const feelings = ['Bloated', 'Energized', 'Heavy', 'Reflux', 'Normal', 'Gassy']
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg border border-emerald-100 overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700 overflow-hidden transition-colors duration-300">
       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
         <div className="flex items-center gap-3">
           <Plus className="w-5 h-5 text-white" />
@@ -34,7 +34,7 @@ const QuickLog = ({ onAddMeal }) => {
       <form onSubmit={handleSubmit} className="p-6 space-y-4">
         {/* Item Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
             What did you eat or drink?
           </label>
           <input
@@ -42,14 +42,14 @@ const QuickLog = ({ onAddMeal }) => {
             value={item}
             onChange={(e) => setItem(e.target.value)}
             placeholder="e.g., Grilled chicken salad, Soda, Greek yogurt..."
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
             autoFocus
           />
         </div>
 
         {/* Feeling Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
             How do you feel? (optional)
           </label>
           <div className="flex flex-wrap gap-2">
@@ -61,7 +61,7 @@ const QuickLog = ({ onAddMeal }) => {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   feeling === f
                     ? 'bg-emerald-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                 }`}
               >
                 {f}
@@ -72,7 +72,7 @@ const QuickLog = ({ onAddMeal }) => {
 
         {/* Custom Feeling Input */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
             Other feelings... (optional)
           </label>
           <input
@@ -80,7 +80,7 @@ const QuickLog = ({ onAddMeal }) => {
             value={customFeeling}
             onChange={(e) => setCustomFeeling(e.target.value)}
             placeholder="Describe how you feel physically or emotionally..."
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+            className="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
           />
         </div>
 
