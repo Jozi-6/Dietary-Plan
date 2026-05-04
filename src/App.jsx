@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun } from 'lucide-react'
+import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun, LayoutGrid } from 'lucide-react'
 import QuickLog from './components/QuickLog'
 import MealList from './components/MealList'
 import AIAnalysis from './components/AIAnalysis'
@@ -71,13 +71,14 @@ function AppContent() {
               </button>
               <button
                 onClick={() => setActiveView('dashboard')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                className={`p-2 rounded-lg font-medium transition-all ${
                   activeView === 'dashboard'
                     ? 'bg-emerald-500 text-white'
                     : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                 }`}
+                aria-label="Dashboard"
               >
-                Dashboard
+                <LayoutGrid className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setActiveView('chat')}
@@ -88,7 +89,7 @@ function AppContent() {
                 }`}
               >
                 <MessageCircle className="w-4 h-4" />
-                AI Chat
+                <span className="hidden md:inline">AI Chat</span>
               </button>
             </div>
           </div>
@@ -96,16 +97,16 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
         {activeView === 'dashboard' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Quick Log and Meal List */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
               {/* Quick Log */}
               <QuickLog onAddMeal={addMeal} />
 
               {/* Today's Meals */}
-              <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700 overflow-hidden transition-colors duration-300">
+              <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-lg rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700/50 overflow-hidden transition-colors duration-300">
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-white" />

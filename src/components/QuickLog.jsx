@@ -24,14 +24,14 @@ const QuickLog = ({ onAddMeal }) => {
   const feelings = ['Bloated', 'Energized', 'Heavy', 'Reflux', 'Normal', 'Gassy']
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700 overflow-hidden transition-colors duration-300">
+    <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-lg rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700/50 overflow-hidden transition-colors duration-300">
       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
         <div className="flex items-center gap-3">
           <Plus className="w-5 h-5 text-white" />
           <h2 className="text-xl font-bold text-white">Quick Log</h2>
         </div>
       </div>
-      <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
         {/* Item Input */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 transition-colors duration-300">
