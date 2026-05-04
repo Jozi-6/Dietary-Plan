@@ -6,14 +6,18 @@ import { VitePWA } from 'vite-plugin-pwa'
 export default defineConfig({
   // REPLACE 'Dietary-Plan' with your actual GitHub repository name
   // Example: if your repo is 'username/my-app', use '/my-app/'
+  // If deploying to root domain (username.github.io), use '/'
   base: '/Dietary-Plan/',
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      strategies: 'generateSW',
       includeAssets: ['favicon.ico', 'apple-touch-icon.svg', 'icon-192x192.svg', 'icon-512x512.svg'],
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -22,7 +26,7 @@ export default defineConfig({
               cacheName: 'google-fonts-cache',
               expiration: {
                 maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                maxAgeSeconds: 60 * 60 * 24 * 365
               },
               cacheableResponse: {
                 statuses: [0, 200]
