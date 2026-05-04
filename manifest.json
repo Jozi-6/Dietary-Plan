@@ -1,0 +1,26 @@
+{
+  "name": "GutCheck - Track Your Intake",
+  "short_name": "GutCheck",
+  "description": "Track your food intake, manage bloating, and achieve a flat stomach through real-time logging and AI feedback.",
+  "start_url": "/Dietary-Plan/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/Dietary-Plan/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/Dietary-Plan/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "fitness", "lifestyle"],
+  "screenshots": []
+}
