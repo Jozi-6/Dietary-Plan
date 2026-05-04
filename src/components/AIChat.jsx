@@ -78,9 +78,9 @@ const AIChat = ({ meals }) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-slate-700 overflow-hidden transition-colors duration-300">
+      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-white/10 overflow-hidden transition-colors duration-300 max-h-[600px] flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
+        <div className="bg-gradient-to-r from-emerald-500/80 to-teal-500/80 backdrop-blur-md px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="bg-white/20 p-2 rounded-lg">
               <Sparkles className="w-5 h-5 text-white" />
@@ -93,7 +93,7 @@ const AIChat = ({ meals }) => {
         </div>
 
         {/* Chat Messages */}
-        <div className="h-[500px] overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-slate-800 transition-colors duration-300">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gray-50 dark:bg-slate-800 transition-colors duration-300">
           {messages.map((message, index) => (
             <div
               key={index}
@@ -107,8 +107,8 @@ const AIChat = ({ meals }) => {
               <div
                 className={`max-w-[80%] rounded-2xl px-4 py-3 ${
                   message.role === 'user'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-white dark:bg-slate-700 text-gray-800 dark:text-white border border-gray-200 dark:border-slate-600'
+                    ? 'bg-emerald-500/50 text-white'
+                    : 'bg-white/10 dark:bg-slate-700/50 text-gray-800 dark:text-white border border-gray-200 dark:border-slate-600'
                 } transition-colors duration-300`}
               >
                 <p className="whitespace-pre-line text-sm">{message.content}</p>
@@ -125,7 +125,7 @@ const AIChat = ({ meals }) => {
               <div className="flex-shrink-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center">
                 <Bot className="w-4 h-4 text-white" />
               </div>
-              <div className="bg-white dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 transition-colors duration-300">
+              <div className="bg-white/10 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-2xl px-4 py-3 transition-colors duration-300">
                 <div className="flex gap-1">
                   <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce transition-colors duration-300" />
                   <div className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
@@ -138,14 +138,14 @@ const AIChat = ({ meals }) => {
         </div>
 
         {/* Input */}
-        <form onSubmit={handleSend} className="p-4 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 transition-colors duration-300">
+        <form onSubmit={handleSend} className="p-4 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border-t border-gray-200 dark:border-white/10 transition-colors duration-300">
           <div className="flex gap-3">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about meal recommendations, bloating, or nutrition tips..."
-              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+              className="flex-1 px-4 py-3 border border-gray-200 dark:border-slate-600 bg-white/80 dark:bg-slate-800/80 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
             />
             <button
               type="submit"

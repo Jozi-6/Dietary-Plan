@@ -1,28 +1,55 @@
 import { useState, useEffect } from 'react'
-import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun, LayoutGrid } from 'lucide-react'
+import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun, LayoutGrid, BarChart3 } from 'lucide-react'
 import QuickLog from './components/QuickLog'
 import MealList from './components/MealList'
 import AIAnalysis from './components/AIAnalysis'
 import AIChat from './components/AIChat'
+import ConsistencyCalendar from './components/ConsistencyCalendar'
+import BiologicalMetrics from './components/BiologicalMetrics'
+import AnalyticsDashboard from './components/AnalyticsDashboard'
+import YearlyProgress from './components/YearlyProgress'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 
 function AppContent() {
   const [meals, setMeals] = useState([])
   const [activeView, setActiveView] = useState('dashboard')
+  const [weightHistory, setWeightHistory] = useState([])
   const { theme, toggleTheme } = useTheme()
 
-  // Load meals from localStorage on mount
+  // Load meals and weight history from localStorage on mount
   useEffect(() => {
-    const savedMeals = localStorage.getItem('gutcheck_meals')
-    if (savedMeals) {
-      setMeals(JSON.parse(savedMeals))
+    try {
+      const savedMeals = localStorage.getItem('gutcheck_meals')
+      if (savedMeals) {
+        const parsedMeals = JSON.parse(savedMeals)
+        if (Array.isArray(parsedMeals)) {
+          setMeals(parsedMeals)
+        }
+      }
+      
+      const savedWeightHistory = localStorage.getItem('gutcheck_weight_history')
+      if (savedWeightHistory) {
+        const parsedHistory = JSON.parse(savedWeightHistory)
+        if (Array.isArray(parsedHistory)) {
+          setWeightHistory(parsedHistory)
+        }
+      }
+
+      // Check for logging gaps and create placeholders
+      checkLoggingGaps()
+    } catch (error) {
+      console.error('Error loading data from localStorage:', error)
     }
   }, [])
 
   // Save meals to localStorage whenever they change
   useEffect(() => {
-    if (meals.length > 0) {
-      localStorage.setItem('gutcheck_meals', JSON.stringify(meals))
+    try {
+      if (meals.length > 0) {
+        localStorage.setItem('gutcheck_meals', JSON.stringify(meals))
+      }
+    } catch (error) {
+      console.error('Error saving meals to localStorage:', error)
     }
   }, [meals])
 
@@ -44,6 +71,63 @@ function AppContent() {
   const getTodayMeals = () => {
     const today = new Date().toDateString()
     return meals.filter(meal => new Date(meal.timestamp).toDateString() === today)
+  }
+
+  const handleMetricsUpdate = (metrics) => {
+    if (metrics.weightHistory) {
+      setWeightHistory(metrics.weightHistory)
+    }
+  }
+
+  const checkLoggingGaps = () => {
+    try {
+      const savedMeals = localStorage.getItem('gutcheck_meals')
+      if (!savedMeals) return
+
+      const meals = JSON.parse(savedMeals)
+      if (!meals || meals.length === 0) return
+
+      // Filter out placeholders when checking for last real meal
+      const realMeals = meals.filter(m => !m.isPlaceholder)
+      if (realMeals.length === 0) return
+
+      // Get the most recent meal date
+      const lastMealDate = new Date(realMeals[0].timestamp)
+      if (isNaN(lastMealDate.getTime())) return
+      
+      lastMealDate.setHours(0, 0, 0, 0)
+      
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      // Calculate the gap in days
+      const gapInDays = Math.floor((today - lastMealDate) / (1000 * 60 * 60 * 24))
+
+      // If there's a gap of more than 1 day, create placeholder entries
+      if (gapInDays > 1) {
+        const placeholders = []
+        for (let i = 1; i < gapInDays; i++) {
+          const placeholderDate = new Date(lastMealDate)
+          placeholderDate.setDate(placeholderDate.getDate() + i)
+          
+          placeholders.push({
+            id: `placeholder-${Date.now()}-${i}`,
+            timestamp: placeholderDate.toISOString(),
+            item: 'No meals logged',
+            feeling: 'Missed',
+            isPlaceholder: true
+          })
+        }
+
+        if (placeholders.length > 0) {
+          const updatedMeals = [...placeholders, ...meals]
+          localStorage.setItem('gutcheck_meals', JSON.stringify(updatedMeals))
+          setMeals(updatedMeals)
+        }
+      }
+    } catch (error) {
+      console.error('Error checking logging gaps:', error)
+    }
   }
 
   return (
@@ -81,15 +165,26 @@ function AppContent() {
                 <LayoutGrid className="w-5 h-5" />
               </button>
               <button
+                onClick={() => setActiveView('stats')}
+                className={`p-2 rounded-lg font-medium transition-all ${
+                  activeView === 'stats'
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                }`}
+                aria-label="Stats"
+              >
+                <BarChart3 className="w-5 h-5" />
+              </button>
+              <button
                 onClick={() => setActiveView('chat')}
-                className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${
+                className={`p-2 rounded-lg font-medium transition-all ${
                   activeView === 'chat'
                     ? 'bg-emerald-500 text-white'
                     : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-700'
                 }`}
+                aria-label="AI Chat"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span className="hidden md:inline">AI Chat</span>
+                <MessageCircle className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -97,7 +192,7 @@ function AppContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+      <main className="max-w-7xl mx-auto px-4 pt-20 pb-6 sm:pb-8">
         {activeView === 'dashboard' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Quick Log and Meal List */}
@@ -123,6 +218,20 @@ function AppContent() {
             {/* Right Column - AI Analysis */}
             <div className="lg:col-span-1">
               <AIAnalysis meals={getTodayMeals()} />
+            </div>
+          </div>
+        ) : activeView === 'stats' ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Left Column - Analytics */}
+            <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              <AnalyticsDashboard meals={meals} weightHistory={weightHistory} />
+              <YearlyProgress meals={meals} weightHistory={weightHistory} />
+            </div>
+
+            {/* Right Column - Calendar and Metrics */}
+            <div className="lg:col-span-1 space-y-4 sm:space-y-6">
+              <ConsistencyCalendar meals={meals} />
+              <BiologicalMetrics onMetricsUpdate={handleMetricsUpdate} />
             </div>
           </div>
         ) : (

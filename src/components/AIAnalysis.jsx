@@ -17,9 +17,41 @@ const AIAnalysis = ({ meals }) => {
     return Math.round((1 - bloatRiskMeals.length / meals.length) * 100)
   }
 
+  const getTriggerFoods = () => {
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    
+    const recentMeals = meals.filter(meal => new Date(meal.timestamp) >= thirtyDaysAgo)
+    
+    const itemBloating = {}
+    
+    recentMeals.forEach(meal => {
+      const item = meal.item.toLowerCase()
+      if (!itemBloating[item]) {
+        itemBloating[item] = { total: 0, bloated: 0 }
+      }
+      itemBloating[item].total++
+      if (meal.feeling === 'Bloated') {
+        itemBloating[item].bloated++
+      }
+    })
+
+    const correlations = Object.entries(itemBloating)
+      .filter(([_, data]) => data.total >= 2 && data.bloated > 0)
+      .map(([item, data]) => ({
+        item,
+        percentage: Math.round((data.bloated / data.total) * 100)
+      }))
+      .sort((a, b) => b.percentage - a.percentage)
+      .slice(0, 3)
+
+    return correlations
+  }
+
   const getDailySummary = () => {
     const bloatScore = calculateBloatScore()
     const bloatedMeals = meals.filter(m => m.feeling === 'Bloated').length
+    const triggerFoods = getTriggerFoods()
     
     let status, statusColor, recommendation
     
@@ -41,7 +73,12 @@ const AIAnalysis = ({ meals }) => {
       recommendation = 'Focus on whole foods and avoid carbonated drinks to reduce bloating.'
     }
 
-    return { bloatScore, bloatedMeals, status, statusColor, recommendation }
+    // Add trigger food insight with Gut Score reference
+    if (triggerFoods.length > 0 && triggerFoods[0].percentage >= 50) {
+      recommendation = `I noticed your Gut Score drops and your Feeling Score gets worse (yellow line in your chart) every time you log "${triggerFoods[0].item}". Try eliminating that for a week to see improvement.`
+    }
+
+    return { bloatScore, bloatedMeals, status, statusColor, recommendation, triggerFoods }
   }
 
   const summary = getDailySummary()
@@ -127,6 +164,24 @@ const AIAnalysis = ({ meals }) => {
               <div className="flex items-start gap-2 text-sm">
                 <span className="text-green-500 dark:text-green-400">✓</span>
                 <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Excellent food choices today! Your stomach will thank you.</p>
+              </div>
+            )}
+
+            {/* Trigger Foods Insights */}
+            {summary.triggerFoods.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+                <h4 className="font-semibold text-gray-800 dark:text-white flex items-center gap-2 transition-colors duration-300 mb-3">
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 transition-colors duration-300" />
+                  Potential Trigger Foods (30 days)
+                </h4>
+                {summary.triggerFoods.map((trigger, i) => (
+                  <div key={i} className="flex items-start gap-2 text-sm mb-2">
+                    <span className="text-red-500 dark:text-red-400">•</span>
+                    <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
+                      <span className="font-medium capitalize">{trigger.item}</span>: {trigger.percentage}% of bloated episodes
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
           </div>
