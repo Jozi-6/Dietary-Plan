@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun, LayoutGrid, BarChart3 } from 'lucide-react'
+import { Plus, Leaf, Flame, AlertTriangle, MessageCircle, Clock, Calendar, Moon, Sun, LayoutGrid, BarChart3, Heart } from 'lucide-react'
 import QuickLog from './components/QuickLog'
+import QuickCheckIn from './components/QuickCheckIn'
 import MealList from './components/MealList'
 import AIAnalysis from './components/AIAnalysis'
 import AIChat from './components/AIChat'
 import ConsistencyCalendar from './components/ConsistencyCalendar'
 import BiologicalMetrics from './components/BiologicalMetrics'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
+import MonthlyProgress from './components/MonthlyProgress'
 import YearlyProgress from './components/YearlyProgress'
 import { ThemeProvider, useTheme } from './context/ThemeContext'
 
@@ -57,9 +59,28 @@ function AppContent() {
     const newMeal = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
+      type: 'meal',
       ...mealData
     }
     setMeals([newMeal, ...meals])
+  }
+
+  const addSymptomLog = (symptomData) => {
+    // Calculate time since last meal
+    const lastMeal = meals.find(m => m.type === 'meal' && !m.isPlaceholder)
+    const timeSinceLastMeal = lastMeal ? {
+      minutes: Math.round((Date.now() - new Date(lastMeal.timestamp).getTime()) / 60000),
+      mealItem: lastMeal.item
+    } : null
+
+    const newSymptom = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      type: 'symptom',
+      timeSinceLastMeal,
+      ...symptomData
+    }
+    setMeals([newSymptom, ...meals])
   }
 
   const updateMeal = (id, updates) => {
@@ -71,6 +92,40 @@ function AppContent() {
   const getTodayMeals = () => {
     const today = new Date().toDateString()
     return meals.filter(meal => new Date(meal.timestamp).toDateString() === today)
+  }
+
+  const getSymptomMealCorrelations = () => {
+    const symptomLogs = meals.filter(m => m.type === 'symptom' && m.timeSinceLastMeal)
+    
+    const correlations = {}
+    
+    symptomLogs.forEach(symptom => {
+      if (!symptom.timeSinceLastMeal) return
+      
+      const mealItem = symptom.timeSinceLastMeal.mealItem
+      const timeMinutes = symptom.timeSinceLastMeal.minutes
+      const feeling = symptom.feeling
+      
+      const key = `${mealItem}-${feeling}`
+      if (!correlations[key]) {
+        correlations[key] = {
+          mealItem,
+          feeling,
+          times: [],
+          count: 0
+        }
+      }
+      
+      correlations[key].times.push(timeMinutes)
+      correlations[key].count++
+    })
+    
+    return Object.values(correlations).map(correlation => ({
+      mealItem: correlation.mealItem,
+      feeling: correlation.feeling,
+      avgTimeMinutes: Math.round(correlation.times.reduce((a, b) => a + b, 0) / correlation.times.length),
+      count: correlation.count
+    })).filter(c => c.count >= 2)
   }
 
   const handleMetricsUpdate = (metrics) => {
@@ -188,7 +243,7 @@ function AppContent() {
               </button>
             </div>
           </div>
-        </div>
+        </div>symptomCorrelations={getSymptomMealCorrelations()} 
       </header>
 
       {/* Main Content */}
@@ -197,6 +252,15 @@ function AppContent() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Quick Log and Meal List */}
             <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              {/* Quick Check-in Button */}
+              <button
+                onClick={() => setActiveView('checkin')}
+                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-4 px-6 rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <Heart className="w-5 h-5" />
+                How are you feeling right now?
+              </button>
+
               {/* Quick Log */}
               <QuickLog onAddMeal={addMeal} />
 
@@ -205,9 +269,9 @@ function AppContent() {
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
                   <div className="flex items-center gap-3">
                     <Calendar className="w-5 h-5 text-white" />
-                    <h2 className="text-xl font-bold text-white">Today's Intake</h2>
+                    <h2 className="text-xl font-bold text-white">Today's Timeline</h2>
                     <span className="text-emerald-100 text-sm ml-auto">
-                      {getTodayMeals().length} meals logged
+                      {getTodayMeals().length} entries
                     </span>
                   </div>
                 </div>
@@ -220,10 +284,13 @@ function AppContent() {
               <AIAnalysis meals={getTodayMeals()} />
             </div>
           </div>
+        ) : activeView === 'checkin' ? (
+          <QuickCheckIn onAddSymptom={addSymptomLog} />
         ) : activeView === 'stats' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Left Column - Analytics */}
             <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+              <MonthlyProgress meals={meals} weightHistory={weightHistory} />
               <AnalyticsDashboard meals={meals} weightHistory={weightHistory} />
               <YearlyProgress meals={meals} weightHistory={weightHistory} />
             </div>

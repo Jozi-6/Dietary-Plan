@@ -1,41 +1,50 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import { TrendingUp } from 'lucide-react'
+import { Calendar } from 'lucide-react'
 
-const YearlyProgress = ({ meals, weightHistory }) => {
+const MonthlyProgress = ({ meals, weightHistory }) => {
   const getBMIColor = (weight, height) => {
-    if (!weight || !height) return '#8b5cf6'
+    if (!weight || !height) return '#8b5cf6' // Default purple if no data
     
     const heightInMeters = height / 100
     const bmi = weight / (heightInMeters * heightInMeters)
     
-    if (bmi < 18.5) return '#eab308'
-    if (bmi < 25) return '#22c55e'
-    if (bmi < 30) return '#f97316'
-    return '#ef4444'
+    if (bmi < 18.5) return '#eab308' // Yellow - Underweight
+    if (bmi < 25) return '#22c55e' // Green - Normal
+    if (bmi < 30) return '#f97316' // Orange - Overweight
+    return '#ef4444' // Red - Obese
   }
 
-  const generateYearData = () => {
+  const generateMonthData = () => {
     const today = new Date()
+    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
     const data = []
     
+    // Get the most recent height from weightHistory
     const latestHeight = weightHistory.length > 0 
       ? weightHistory[weightHistory.length - 1].height 
       : null
     
-    for (let i = 11; i >= 0; i--) {
-      const month = new Date(today.getFullYear(), today.getMonth() - i, 1)
-      const monthName = month.toLocaleDateString('en-US', { month: 'short' })
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(today.getFullYear(), today.getMonth(), day)
       
-      const monthMeals = meals.filter(m => {
+      const dayMeals = meals.filter(m => {
         const mealDate = new Date(m.timestamp)
-        return mealDate.getMonth() === month.getMonth() && mealDate.getFullYear() === month.getFullYear()
+        return mealDate.getDate() === day && 
+               mealDate.getMonth() === today.getMonth() &&
+               mealDate.getFullYear() === today.getFullYear()
       })
       
-      const monthWeightEntries = weightHistory.filter(w => {
+      const dayWeightEntry = weightHistory.find(w => {
         const weightDate = new Date(w.date)
-        return weightDate.getMonth() === month.getMonth() && weightDate.getFullYear() === month.getFullYear()
+        return weightDate.getDate() === day && 
+               weightDate.getMonth() === today.getMonth() &&
+               weightDate.getFullYear() === today.getFullYear()
       })
       
+      const weight = dayWeightEntry?.weight || null
+      const height = dayWeightEntry?.height || latestHeight
+      
+      // Calculate Meal Safety %
       const bloatRisks = [
         'soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy',
         'chips', 'fries', 'pizza', 'burger', 'fast food',
@@ -43,60 +52,44 @@ const YearlyProgress = ({ meals, weightHistory }) => {
         'beans', 'broccoli', 'cabbage', 'cauliflower',
         'dairy', 'milk', 'cheese', 'ice cream'
       ]
-      
-      const unsafeMeals = monthMeals.filter(m => 
+      const unsafeMeals = dayMeals.filter(m => 
         bloatRisks.some(risk => m.item.toLowerCase().includes(risk))
       ).length
-      
-      const mealSafety = monthMeals.length > 0 
-        ? Math.round(((monthMeals.length - unsafeMeals) / monthMeals.length) * 100)
-        : 0
-      
-      const monthSymptoms = meals.filter(m => 
-        m.type === 'symptom' && 
-        new Date(m.timestamp).getMonth() === month.getMonth() &&
-        new Date(m.timestamp).getFullYear() === month.getFullYear()
-      )
-      
-      const positiveFeelings = ['Normal', 'Energized', 'Happy']
-      const negativeFeelings = ['Bloated', 'Gassy', 'Heavy', 'Reflux', 'Cramping']
-      
-      const positiveCount = monthSymptoms.filter(m => 
-        positiveFeelings.includes(m.feeling)
-      ).length
-      
-      const negativeCount = monthSymptoms.filter(m => 
-        negativeFeelings.includes(m.feeling)
-      ).length
-      
-      const feelingsScore = (positiveCount + negativeCount) > 0
-        ? Math.round((positiveCount / (positiveCount + negativeCount)) * 10)
-        : 5
-      
-      const avgWeight = monthWeightEntries.length > 0
-        ? Math.round(monthWeightEntries.reduce((sum, w) => sum + w.weight, 0) / monthWeightEntries.length)
+      const mealSafety = dayMeals.length > 0 
+        ? Math.round(((dayMeals.length - unsafeMeals) / dayMeals.length) * 100)
         : null
       
-      const avgHeight = monthWeightEntries.length > 0
-        ? Math.round(monthWeightEntries.reduce((sum, w) => sum + (w.height || 0), 0) / monthWeightEntries.length)
-        : latestHeight
-      
-      const weightColor = getBMIColor(avgWeight, avgHeight)
+      // Calculate Feelings Score from symptom logs
+      const daySymptoms = meals.filter(m => 
+        m.type === 'symptom' && 
+        new Date(m.timestamp).getDate() === day &&
+        new Date(m.timestamp).getMonth() === today.getMonth() &&
+        new Date(m.timestamp).getFullYear() === today.getFullYear()
+      )
+      const positiveFeelings = ['Normal', 'Energized', 'Happy']
+      const negativeFeelings = ['Bloated', 'Gassy', 'Heavy', 'Reflux', 'Cramping']
+      const positiveCount = daySymptoms.filter(m => positiveFeelings.includes(m.feeling)).length
+      const negativeCount = daySymptoms.filter(m => negativeFeelings.includes(m.feeling)).length
+      const feelingsScore = (positiveCount + negativeCount) > 0
+        ? Math.round((positiveCount / (positiveCount + negativeCount)) * 10)
+        : null
       
       data.push({
-        month: monthName,
+        day,
         feelingsScore,
         mealSafety,
-        weight: avgWeight,
-        height: avgHeight,
-        weightColor
+        weight,
+        height,
+        weightColor: getBMIColor(weight, height)
       })
     }
     
     return data
   }
 
-  const data = generateYearData()
+  const data = generateMonthData()
+
+  // Get the latest weight color for the line
   const latestWeightColor = data.filter(d => d.weight).length > 0
     ? data.filter(d => d.weight).reverse()[0]?.weightColor
     : '#8b5cf6'
@@ -121,8 +114,8 @@ const YearlyProgress = ({ meals, weightHistory }) => {
     <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl shadow-lg dark:shadow-slate-900/50 border border-emerald-100 dark:border-white/10 overflow-hidden transition-colors duration-300">
       <div className="bg-gradient-to-r from-emerald-500 to-teal-500 px-6 py-4">
         <div className="flex items-center gap-3">
-          <TrendingUp className="w-5 h-5 text-white" />
-          <h2 className="text-xl font-bold text-white">Yearly Progress</h2>
+          <Calendar className="w-5 h-5 text-white" />
+          <h2 className="text-xl font-bold text-white">Monthly Progress</h2>
         </div>
       </div>
       <div className="p-4 sm:p-6">
@@ -131,21 +124,24 @@ const YearlyProgress = ({ meals, weightHistory }) => {
             <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" strokeOpacity={0.5} />
               <XAxis 
-                dataKey="month" 
+                dataKey="day" 
                 stroke="#6b7280"
                 fontSize={12}
+                label={{ value: 'Day', position: 'insideBottom', offset: -5 }}
               />
               <YAxis 
                 yAxisId="left"
                 stroke="#6b7280"
                 fontSize={12}
                 domain={[0, 100]}
+                label={{ value: '% / Score', angle: -90, position: 'insideLeft' }}
               />
               <YAxis 
                 yAxisId="right"
                 orientation="right"
                 stroke="#6b7280"
                 fontSize={12}
+                label={{ value: 'Weight (kg)', angle: 90, position: 'insideRight' }}
               />
               <Tooltip 
                 contentStyle={{
@@ -154,7 +150,7 @@ const YearlyProgress = ({ meals, weightHistory }) => {
                   borderRadius: '8px'
                 }}
                 formatter={(value, name, props) => {
-                  if (name === 'Weight (kg) - BMI Status' && props.payload.weight !== null) {
+                  if (name === 'Weight (kg)' && props.payload.weight !== null) {
                     const height = props.payload.height
                     const weight = props.payload.weight
                     let bmiStatus = 'Unknown'
@@ -179,6 +175,7 @@ const YearlyProgress = ({ meals, weightHistory }) => {
                 strokeWidth={2}
                 name="Meal Safety %"
                 dot={{ r: 4 }}
+                connectNullPoints={false}
               />
               <Line 
                 yAxisId="left"
@@ -188,6 +185,7 @@ const YearlyProgress = ({ meals, weightHistory }) => {
                 strokeWidth={2}
                 name="Feelings Score (1-10)"
                 dot={{ r: 4 }}
+                connectNullPoints={false}
               />
               <Line 
                 yAxisId="right"
@@ -225,4 +223,4 @@ const YearlyProgress = ({ meals, weightHistory }) => {
   )
 }
 
-export default YearlyProgress
+export default MonthlyProgress

@@ -34,16 +34,28 @@ const BiologicalMetrics = ({ onMetricsUpdate }) => {
   }, [height, weight])
 
   const calculateBMI = () => {
-    if (!height || !weight) return
+    if (!height || !weight) {
+      setBMI(null)
+      setBMICategory('')
+      return
+    }
     
     const heightInMeters = parseFloat(height) / 100
     const weightInKg = parseFloat(weight)
     
-    if (!heightInMeters || !weightInKg || heightInMeters <= 0 || weightInKg <= 0) return
+    if (!heightInMeters || !weightInKg || heightInMeters <= 0 || weightInKg <= 0) {
+      setBMI(null)
+      setBMICategory('')
+      return
+    }
     
     const bmiValue = weightInKg / (heightInMeters * heightInMeters)
     
-    if (!isFinite(bmiValue)) return
+    if (!isFinite(bmiValue)) {
+      setBMI(null)
+      setBMICategory('')
+      return
+    }
     
     setBMI(bmiValue.toFixed(1))
     
@@ -81,12 +93,12 @@ const BiologicalMetrics = ({ onMetricsUpdate }) => {
   }
 
   const getBMIColor = () => {
-    if (!bmi) return 'text-gray-600 dark:text-gray-400'
+    if (!bmi) return { bg: 'bg-gray-100 dark:bg-slate-700', text: 'text-gray-600 dark:text-gray-400' }
     const bmiValue = parseFloat(bmi)
-    if (bmiValue < 18.5) return 'text-blue-600 dark:text-blue-400'
-    if (bmiValue < 25) return 'text-emerald-600 dark:text-emerald-400'
-    if (bmiValue < 30) return 'text-amber-600 dark:text-amber-400'
-    return 'text-red-600 dark:text-red-400'
+    if (bmiValue < 18.5) return { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' }
+    if (bmiValue < 25) return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' }
+    if (bmiValue < 30) return { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400' }
+    return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' }
   }
 
   const getWeightTrend = () => {
@@ -118,8 +130,10 @@ const BiologicalMetrics = ({ onMetricsUpdate }) => {
           <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur rounded-xl p-4 border border-emerald-100 dark:border-slate-600">
             <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Your BMI</p>
-              <p className={`text-4xl font-bold ${getBMIColor()}`}>{bmi}</p>
-              <p className={`text-sm font-medium mt-1 ${getBMIColor()}`}>{bmiCategory}</p>
+              <p className={`text-4xl font-bold ${getBMIColor().text}`}>{bmi}</p>
+              <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-semibold ${getBMIColor().bg} ${getBMIColor().text}`}>
+                {bmiCategory}
+              </span>
             </div>
           </div>
         )}
@@ -128,12 +142,12 @@ const BiologicalMetrics = ({ onMetricsUpdate }) => {
         {weightTrend && (
           <div className="flex items-center justify-center gap-2 text-sm">
             {weightTrend.trend === 'up' ? (
-              <TrendingUp className="w-4 h-4 text-red-500" />
+              <TrendingUp className="w-4 h-4 text-purple-500" />
             ) : (
-              <TrendingDown className="w-4 h-4 text-emerald-500" />
+              <TrendingDown className="w-4 h-4 text-purple-500" />
             )}
-            <span className="text-gray-600 dark:text-gray-400">
-              {weightTrend.trend === 'up' ? 'Weight up' : 'Weight down'} {weightTrend.value}kg this week
+            <span className="text-purple-600 dark:text-purple-400 font-medium">
+              Weight {weightTrend.trend === 'up' ? 'up' : 'down'} {weightTrend.value}kg this week
             </span>
           </div>
         )}

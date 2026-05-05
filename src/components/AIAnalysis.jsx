@@ -1,6 +1,6 @@
 import { Brain, TrendingUp, AlertCircle, CheckCircle, Target } from 'lucide-react'
 
-const AIAnalysis = ({ meals }) => {
+const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
   const calculateBloatScore = () => {
     if (meals.length === 0) return 0
     
@@ -17,30 +17,52 @@ const AIAnalysis = ({ meals }) => {
     return Math.round((1 - bloatRiskMeals.length / meals.length) * 100)
   }
 
+  const getUnsafeMealCount = () => {
+    const bloatRisks = [
+      'soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy',
+      'chips', 'fries', 'pizza', 'burger', 'fast food',
+      'candy', 'sweets', 'alcohol', 'beer',
+      'beans', 'broccoli', 'cabbage', 'cauliflower',
+      'dairy', 'milk', 'cheese', 'ice cream'
+    ]
+    
+    return meals.filter(meal => 
+      bloatRisks.some(risk => meal.item.toLowerCase().includes(risk))
+    ).length
+  }
+
   const getTriggerFoods = () => {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
     
     const recentMeals = meals.filter(meal => new Date(meal.timestamp) >= thirtyDaysAgo)
     
+    const bloatRisks = [
+      'soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy',
+      'chips', 'fries', 'pizza', 'burger', 'fast food',
+      'candy', 'sweets', 'alcohol', 'beer',
+      'beans', 'broccoli', 'cabbage', 'cauliflower',
+      'dairy', 'milk', 'cheese', 'ice cream'
+    ]
+    
     const itemBloating = {}
     
     recentMeals.forEach(meal => {
       const item = meal.item.toLowerCase()
       if (!itemBloating[item]) {
-        itemBloating[item] = { total: 0, bloated: 0 }
+        itemBloating[item] = { total: 0, unsafe: 0 }
       }
       itemBloating[item].total++
-      if (meal.feeling === 'Bloated') {
-        itemBloating[item].bloated++
+      if (bloatRisks.some(risk => item.includes(risk))) {
+        itemBloating[item].unsafe++
       }
     })
 
     const correlations = Object.entries(itemBloating)
-      .filter(([_, data]) => data.total >= 2 && data.bloated > 0)
+      .filter(([_, data]) => data.total >= 2 && data.unsafe > 0)
       .map(([item, data]) => ({
         item,
-        percentage: Math.round((data.bloated / data.total) * 100)
+        percentage: Math.round((data.unsafe / data.total) * 100)
       }))
       .sort((a, b) => b.percentage - a.percentage)
       .slice(0, 3)
@@ -50,7 +72,7 @@ const AIAnalysis = ({ meals }) => {
 
   const getDailySummary = () => {
     const bloatScore = calculateBloatScore()
-    const bloatedMeals = meals.filter(m => m.feeling === 'Bloated').length
+    const unsafeMeals = getUnsafeMealCount()
     const triggerFoods = getTriggerFoods()
     
     let status, statusColor, recommendation
@@ -73,12 +95,24 @@ const AIAnalysis = ({ meals }) => {
       recommendation = 'Focus on whole foods and avoid carbonated drinks to reduce bloating.'
     }
 
-    // Add trigger food insight with Gut Score reference
     if (triggerFoods.length > 0 && triggerFoods[0].percentage >= 50) {
       recommendation = `I noticed your Gut Score drops and your Feeling Score gets worse (yellow line in your chart) every time you log "${triggerFoods[0].item}". Try eliminating that for a week to see improvement.`
     }
 
-    return { bloatScore, bloatedMeals, status, statusColor, recommendation, triggerFoods }
+    const timingPatterns = symptomCorrelations.filter(c => 
+      c.feeling === 'Bloated' || c.feeling === 'Heavy' || c.feeling === 'Gassy'
+    )
+    
+    if (timingPatterns.length > 0) {
+      const pattern = timingPatterns[0]
+      const timeStr = pattern.avgTimeMinutes < 60 
+        ? `${pattern.avgTimeMinutes} minutes` 
+        : `${Math.round(pattern.avgTimeMinutes / 60)} hours`
+      
+      recommendation = `Hey, you usually feel ${pattern.feeling.toLowerCase()} about ${timeStr} after eating ${pattern.mealItem}. Check your Feelings Trends to see patterns over time.`
+    }
+
+    return { bloatScore, unsafeMeals, status, statusColor, recommendation, triggerFoods, timingPatterns }
   }
 
   const summary = getDailySummary()
@@ -121,9 +155,9 @@ const AIAnalysis = ({ meals }) => {
           <div className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 text-center transition-colors duration-300">
             <div className="flex items-center justify-center gap-2 mb-1">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 transition-colors duration-300" />
-              <span className="text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">{summary.bloatedMeals}</span>
+              <span className="text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">{summary.unsafeMeals}</span>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 transition-colors duration-300">Bloated Episodes</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 transition-colors duration-300">Unsafe/Warning Meals</p>
           </div>
         </div>
 
@@ -178,7 +212,7 @@ const AIAnalysis = ({ meals }) => {
                   <div key={i} className="flex items-start gap-2 text-sm mb-2">
                     <span className="text-red-500 dark:text-red-400">•</span>
                     <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
-                      <span className="font-medium capitalize">{trigger.item}</span>: {trigger.percentage}% of bloated episodes
+                      <span className="font-medium capitalize">{trigger.item}</span>: {trigger.percentage}% flagged as unsafe
                     </p>
                   </div>
                 ))}
