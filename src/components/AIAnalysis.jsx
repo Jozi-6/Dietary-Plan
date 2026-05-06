@@ -1,20 +1,65 @@
 import { Brain, TrendingUp, AlertCircle, CheckCircle, Target } from 'lucide-react'
 
 const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
+  // Comprehensive trigger database
+  const triggerDatabase = {
+    highSodium: [
+      'processed meats', 'soy sauce', 'canned soups', 'pickles', 'olives', 'chips', 'crackers',
+      'cheese', 'bacon', 'ham', 'sausage', 'hot dogs', 'salami', 'deli meats', 'canned tuna',
+      'instant noodles', 'ramen', 'pretzels', 'popcorn', 'nuts', 'seeds', 'jerky'
+    ],
+    fodmaps: [
+      'onions', 'garlic', 'wheat', 'beans', 'lentils', 'chickpeas', 'kidney beans',
+      'broccoli', 'cabbage', 'cauliflower', 'brussels sprouts', 'apples', 'pears',
+      'mango', 'peaches', 'plums', 'cherries', 'apricots', 'watermelon', 'milk', 'yogurt',
+      'ice cream', 'soft cheese', 'honey', 'agave', 'high fructose corn syrup', 'artificial sweeteners'
+    ],
+    carbonation: [
+      'soda', 'pop', 'coke', 'pepsi', 'sprite', 'fanta', 'mountain dew', 'dr pepper',
+      'carbonated', 'fizzy', 'sparkling water', 'seltzer', 'club soda', 'tonic water'
+    ],
+    irritants: [
+      'alcohol', 'beer', 'wine', 'coffee', 'tea', 'chocolate', 'spicy', 'curry',
+      'hot sauce', 'pepper', 'cinnamon', 'fatty foods', 'fried foods'
+    ]
+  }
+
+  // Gut-friendly foods for relief mode
+  const gutFriendlyFoods = [
+    'bananas', 'rice', 'plain rice', 'white rice', 'papaya', 'pineapple', 'blueberries',
+    'strawberries', 'potatoes', 'carrots', 'zucchini', 'cucumber', 'lettuce', 'spinach',
+    'chicken', 'turkey', 'fish', 'eggs', 'tofu', 'quinoa', 'oats', 'gluten-free bread'
+  ]
+
   const calculateBloatScore = () => {
-    if (meals.length === 0) return 0
-    
-    const bloatRiskMeals = meals.filter(meal => {
-      const item = meal.item.toLowerCase()
-      const bloatRisks = [
-        'soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy',
-        'chips', 'fries', 'pizza', 'burger', 'fast food',
-        'candy', 'sweets', 'alcohol', 'beer'
+    // Only count actual meal entries for compliance calculation
+    const mealEntries = meals.filter(meal => meal.type === 'meal')
+    if (mealEntries.length === 0) return 0
+
+    const bloatRiskMeals = mealEntries.filter(meal => {
+      const item = meal.item?.toLowerCase() || ''
+      const allTriggers = [
+        ...triggerDatabase.highSodium,
+        ...triggerDatabase.fodmaps,
+        ...triggerDatabase.carbonation,
+        ...triggerDatabase.irritants
       ]
-      return bloatRisks.some(risk => item.includes(risk))
+      return allTriggers.some(risk => item.includes(risk))
     })
 
-    return Math.round((1 - bloatRiskMeals.length / meals.length) * 100)
+    // Count negative symptoms to penalize compliance
+    const negativeSymptoms = meals.filter(meal => meal.type === 'symptom' &&
+      (meal.feeling === 'Bloated' || meal.feeling === 'Heavy' || meal.feeling === 'Gassy' ||
+       meal.feeling === 'Cramps' || meal.feeling === 'Reflux')).length
+
+    let adjustedScore = Math.round((1 - bloatRiskMeals.length / mealEntries.length) * 100)
+
+    // Reduce score for negative symptoms - even if no "bad" foods were eaten
+    if (negativeSymptoms > 0) {
+      adjustedScore = Math.max(0, adjustedScore - (negativeSymptoms * 20))
+    }
+
+    return adjustedScore
   }
 
   const getUnsafeMealCount = () => {
@@ -27,33 +72,31 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
     ]
     
     return meals.filter(meal => 
-      bloatRisks.some(risk => meal.item.toLowerCase().includes(risk))
+      bloatRisks.some(risk => meal.item?.toLowerCase()?.includes(risk))
     ).length
   }
 
   const getTriggerFoods = () => {
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    
+
     const recentMeals = meals.filter(meal => new Date(meal.timestamp) >= thirtyDaysAgo)
-    
-    const bloatRisks = [
-      'soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy',
-      'chips', 'fries', 'pizza', 'burger', 'fast food',
-      'candy', 'sweets', 'alcohol', 'beer',
-      'beans', 'broccoli', 'cabbage', 'cauliflower',
-      'dairy', 'milk', 'cheese', 'ice cream'
-    ]
-    
+
     const itemBloating = {}
-    
+
     recentMeals.forEach(meal => {
-      const item = meal.item.toLowerCase()
+      const item = meal.item?.toLowerCase() || ''
       if (!itemBloating[item]) {
         itemBloating[item] = { total: 0, unsafe: 0 }
       }
       itemBloating[item].total++
-      if (bloatRisks.some(risk => item.includes(risk))) {
+      const allTriggers = [
+        ...triggerDatabase.highSodium,
+        ...triggerDatabase.fodmaps,
+        ...triggerDatabase.carbonation,
+        ...triggerDatabase.irritants
+      ]
+      if (allTriggers.some(risk => item.includes(risk))) {
         itemBloating[item].unsafe++
       }
     })
@@ -70,13 +113,113 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
     return correlations
   }
 
+  // Analyze meals 2-4 hours before bloating symptoms
+  const getRecentBloatingTriggers = () => {
+    const todayMeals = meals.filter(meal =>
+      new Date(meal.timestamp).toDateString() === new Date().toDateString()
+    )
+
+    const bloatingSymptoms = todayMeals.filter(meal =>
+      meal.type === 'symptom' &&
+      (meal.feeling === 'Bloated' || meal.feeling === 'Heavy' || meal.feeling === 'Gassy')
+    )
+
+    if (bloatingSymptoms.length === 0) return null
+
+    const symptomTimes = bloatingSymptoms.map(s => new Date(s.timestamp))
+
+    // Find meals logged 2-4 hours before any bloating symptom
+    const triggerMeals = todayMeals.filter(meal => {
+      if (meal.type !== 'meal') return false
+
+      const mealTime = new Date(meal.timestamp)
+      return symptomTimes.some(symptomTime => {
+        const timeDiff = (symptomTime - mealTime) / (1000 * 60 * 60) // hours
+        return timeDiff >= 2 && timeDiff <= 4
+      })
+    })
+
+    // Categorize triggers
+    const triggers = []
+    triggerMeals.forEach(meal => {
+      const item = meal.item?.toLowerCase() || ''
+
+      // High FODMAPs
+      const fodmapTriggers = triggerDatabase.fodmaps.filter(trigger => item.includes(trigger))
+      if (fodmapTriggers.length > 0) {
+        triggers.push({
+          food: meal.item,
+          category: 'High FODMAP',
+          examples: fodmapTriggers.slice(0, 2).join(', '),
+          type: 'fodmap'
+        })
+      }
+
+      // Dairy
+      const dairyTriggers = ['milk', 'cheese', 'yogurt', 'cream', 'butter', 'ice cream']
+      if (dairyTriggers.some(trigger => item.includes(trigger))) {
+        triggers.push({
+          food: meal.item,
+          category: 'Dairy',
+          examples: 'lactose-containing',
+          type: 'dairy'
+        })
+      }
+
+      // Carbonation
+      if (triggerDatabase.carbonation.some(trigger => item.includes(trigger))) {
+        triggers.push({
+          food: meal.item,
+          category: 'Carbonation',
+          examples: 'bubbles and gas',
+          type: 'carbonation'
+        })
+      }
+
+      // Cruciferous veggies
+      const cruciferous = ['broccoli', 'cabbage', 'cauliflower', 'brussels sprouts']
+      if (cruciferous.some(trigger => item.includes(trigger))) {
+        triggers.push({
+          food: meal.item,
+          category: 'Cruciferous Vegetable',
+          examples: 'sulfur compounds',
+          type: 'cruciferous'
+        })
+      }
+    })
+
+    return triggers.length > 0 ? triggers[0] : null // Return the first trigger found
+  }
+
   const getDailySummary = () => {
     const bloatScore = calculateBloatScore()
     const unsafeMeals = getUnsafeMealCount()
     const triggerFoods = getTriggerFoods()
-    
+    const recentTrigger = getRecentBloatingTriggers()
+
     let status, statusColor, recommendation
-    
+
+    // Check for recent bloating symptoms first - highest priority
+    if (recentTrigger) {
+      status = 'Bloating Detected'
+      statusColor = 'red'
+
+      const reliefDrinks = ['peppermint tea', 'ginger tea', 'chamomile tea', 'fennel tea', 'plain water']
+      const nextMealFoods = ['grilled chicken', 'white rice', 'bananas', 'papaya', 'blueberries', 'eggs', 'fish']
+
+      const randomDrink = reliefDrinks[Math.floor(Math.random() * reliefDrinks.length)]
+      const randomFood = nextMealFoods[Math.floor(Math.random() * nextMealFoods.length)]
+
+      recommendation = `Potential Culprit: You logged "${recentTrigger.food}" earlier, which contains ${recentTrigger.examples} that can often cause bloating.
+
+      Immediate Relief: Try drinking ${randomDrink} or taking a short walk to help reduce discomfort.
+
+      Next Meal Advice: Consider ${randomFood} for your next log - these are typically easier on the digestive system.`
+
+      return { bloatScore, unsafeMeals, status, statusColor, recommendation, triggerFoods, timingPatterns: symptomCorrelations, recentTrigger }
+    }
+
+    // Default status based on compliance score
     if (bloatScore >= 80) {
       status = 'Excellent'
       statusColor = 'green'
@@ -95,20 +238,22 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
       recommendation = 'Focus on whole foods and avoid carbonated drinks to reduce bloating.'
     }
 
+    // Check for high-percentage trigger foods (long-term patterns)
     if (triggerFoods.length > 0 && triggerFoods[0].percentage >= 50) {
       recommendation = `I noticed your Gut Score drops and your Feeling Score gets worse (yellow line in your chart) every time you log "${triggerFoods[0].item}". Try eliminating that for a week to see improvement.`
     }
 
-    const timingPatterns = symptomCorrelations.filter(c => 
+    // Check for timing patterns (existing symptom correlations)
+    const timingPatterns = symptomCorrelations.filter(c =>
       c.feeling === 'Bloated' || c.feeling === 'Heavy' || c.feeling === 'Gassy'
     )
-    
+
     if (timingPatterns.length > 0) {
       const pattern = timingPatterns[0]
-      const timeStr = pattern.avgTimeMinutes < 60 
-        ? `${pattern.avgTimeMinutes} minutes` 
+      const timeStr = pattern.avgTimeMinutes < 60
+        ? `${pattern.avgTimeMinutes} minutes`
         : `${Math.round(pattern.avgTimeMinutes / 60)} hours`
-      
+
       recommendation = `Hey, you usually feel ${pattern.feeling.toLowerCase()} about ${timeStr} after eating ${pattern.mealItem}. Check your Feelings Trends to see patterns over time.`
     }
 
@@ -157,7 +302,7 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 transition-colors duration-300" />
               <span className="text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">{summary.unsafeMeals}</span>
             </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 transition-colors duration-300">Unsafe/Warning Meals</p>
+            <p className="text-xs text-gray-600 dark:text-gray-400 transition-colors duration-300">Symptom Warnings</p>
           </div>
         </div>
 
@@ -180,14 +325,14 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
               Today's Insights
             </h4>
             
-            {meals.some(m => m.item.toLowerCase().includes('soda')) && (
+            {meals.some(m => m.item?.toLowerCase()?.includes('soda')) && (
               <div className="flex items-start gap-2 text-sm">
                 <span className="text-red-500 dark:text-red-400">⚠️</span>
                 <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Carbonated drinks like soda can cause bloating. Try sparkling water instead.</p>
               </div>
             )}
             
-            {meals.some(m => m.item.toLowerCase().includes('dairy') && m.feeling === 'Bloated') && (
+            {meals.some(m => m.item?.toLowerCase()?.includes('dairy') && m.feeling === 'Bloated') && (
               <div className="flex items-start gap-2 text-sm">
                 <span className="text-amber-500 dark:text-amber-400">💡</span>
                 <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">You felt bloated after dairy. Consider lactose-free alternatives.</p>

@@ -45,7 +45,7 @@ const YearlyProgress = ({ meals, weightHistory }) => {
       ]
       
       const unsafeMeals = monthMeals.filter(m => 
-        bloatRisks.some(risk => m.item.toLowerCase().includes(risk))
+        bloatRisks.some(risk => m.item?.toLowerCase()?.includes(risk))
       ).length
       
       const mealSafety = monthMeals.length > 0 

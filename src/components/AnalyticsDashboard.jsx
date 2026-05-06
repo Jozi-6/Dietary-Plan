@@ -27,7 +27,7 @@ const AnalyticsDashboard = ({ meals, weightHistory }) => {
   const calculateDailyGutScore = (dayMeals, hasEntry) => {
     if (!hasEntry || dayMeals.length === 0) return 0
     const safeItems = dayMeals.filter(m => {
-      const item = m.item.toLowerCase()
+      const item = m.item?.toLowerCase() || ''
       const bloatRisks = ['soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy', 'chips', 'fries', 'pizza', 'burger', 'fast food', 'candy', 'sweets', 'alcohol', 'beer']
       return !bloatRisks.some(risk => item.includes(risk))
     })
@@ -83,7 +83,7 @@ const AnalyticsDashboard = ({ meals, weightHistory }) => {
       const hasEntry = dayMeals.length > 0
       const gutScore = calculateDailyGutScore(dayMeals, hasEntry)
       const bloatRisks = ['soda', 'pop', 'coke', 'pepsi', 'carbonated', 'fizzy', 'chips', 'fries', 'pizza', 'burger', 'fast food', 'candy', 'sweets', 'alcohol', 'beer', 'beans', 'broccoli', 'cabbage', 'cauliflower', 'dairy', 'milk', 'cheese', 'ice cream']
-      const unsafeMeals = dayMeals.filter(m => bloatRisks.some(risk => m.item.toLowerCase().includes(risk))).length
+      const unsafeMeals = dayMeals.filter(m => bloatRisks.some(risk => m.item?.toLowerCase()?.includes(risk))).length
       const mealSafety = dayMeals.length > 0 ? Math.round(((dayMeals.length - unsafeMeals) / dayMeals.length) * 100) : 0
       const daySymptoms = meals.filter(m => m.type === 'symptom' && new Date(m.timestamp).toDateString() === date.toDateString())
       const positiveFeelings = ['Normal', 'Energized', 'Happy']
@@ -110,7 +110,7 @@ const AnalyticsDashboard = ({ meals, weightHistory }) => {
   const findCorrelations = () => {
     const itemBloating = {}
     meals.forEach(meal => {
-      const item = meal.item.toLowerCase()
+      const item = meal.item?.toLowerCase() || ''
       if (!itemBloating[item]) {
         itemBloating[item] = { total: 0, bloated: 0 }
       }
@@ -203,7 +203,7 @@ const AnalyticsDashboard = ({ meals, weightHistory }) => {
             <h2 className="text-xl font-bold text-white">Weekly Progress</h2>
           </div>
         </div>
-        <div className="p-4 sm:p-6">
+        <div className="p-4 sm:p-6 min-h-[300px]">
           <div className="h-64">{renderTripleLineChart(weeklyGutScore)}</div>
         </div>
         <div className="px-4 sm:px-6 pb-4 sm:pb-6">

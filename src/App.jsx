@@ -243,7 +243,7 @@ function AppContent() {
               </button>
             </div>
           </div>
-        </div>symptomCorrelations={getSymptomMealCorrelations()} 
+        </div>{getSymptomMealCorrelations()} 
       </header>
 
       {/* Main Content */}

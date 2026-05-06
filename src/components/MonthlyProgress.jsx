@@ -53,7 +53,7 @@ const MonthlyProgress = ({ meals, weightHistory }) => {
         'dairy', 'milk', 'cheese', 'ice cream'
       ]
       const unsafeMeals = dayMeals.filter(m => 
-        bloatRisks.some(risk => m.item.toLowerCase().includes(risk))
+        bloatRisks.some(risk => m.item?.toLowerCase()?.includes(risk))
       ).length
       const mealSafety = dayMeals.length > 0 
         ? Math.round(((dayMeals.length - unsafeMeals) / dayMeals.length) * 100)
@@ -118,7 +118,7 @@ const MonthlyProgress = ({ meals, weightHistory }) => {
           <h2 className="text-xl font-bold text-white">Monthly Progress</h2>
         </div>
       </div>
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-6 min-h-[300px]">
         <div className="h-80">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>

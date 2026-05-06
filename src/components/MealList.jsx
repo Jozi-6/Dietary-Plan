@@ -9,7 +9,7 @@ const MealList = ({ meals, onUpdateMeal }) => {
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
   }
   const analyzeSafety = (item) => {
-    const lowerItem = item.toLowerCase()
+    const lowerItem = item?.toLowerCase() || ''
     
     // Bloat risk items (carbonated, high-sodium, high-sugar)
     const bloatRisks = [
