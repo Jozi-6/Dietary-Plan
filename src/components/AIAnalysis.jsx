@@ -36,23 +36,32 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
     const mealEntries = meals.filter(meal => meal.type === 'meal')
     if (mealEntries.length === 0) return 0
 
-    const bloatRiskMeals = mealEntries.filter(meal => {
+    // Count meals flagged as caution (from MealList.jsx analysis)
+    const cautionMeals = mealEntries.filter(meal => {
       const item = meal.item?.toLowerCase() || ''
-      const allTriggers = [
-        ...triggerDatabase.highSodium,
-        ...triggerDatabase.fodmaps,
-        ...triggerDatabase.carbonation,
-        ...triggerDatabase.irritants
-      ]
-      return allTriggers.some(risk => item.includes(risk))
-    })
+
+      // High sodium items
+      const highSodium = ['greasy', 'fried', 'processed', 'chips', 'crackers', 'bacon', 'ham', 'sausage', 'hot dog', 'salami', 'deli meat', 'canned soup', 'instant noodle', 'ramen', 'pretzel', 'popcorn', 'jerky']
+
+      // FODMAP items
+      const fodmaps = ['onion', 'garlic', 'wheat', 'bean', 'lentil', 'chickpea', 'kidney bean', 'broccoli', 'cabbage', 'cauliflower', 'brussels sprout', 'apple', 'pear', 'mango', 'peach', 'plum', 'cherry', 'apricot', 'watermelon', 'milk', 'yogurt', 'ice cream', 'soft cheese', 'honey', 'agave', 'artificial sweetener']
+
+      // Carbonation
+      const carbonated = ['soda', 'pop', 'coke', 'pepsi', 'sprite', 'fanta', 'mountain dew', 'dr pepper', 'carbonated', 'fizzy', 'sparkling water', 'seltzer', 'club soda', 'tonic water']
+
+      // Other irritants
+      const irritants = ['alcohol', 'beer', 'wine', 'coffee', 'tea', 'chocolate', 'spicy', 'curry', 'hot sauce', 'pepper', 'cinnamon', 'fatty', 'greasy']
+
+      const allCaution = [...highSodium, ...fodmaps, ...carbonated, ...irritants]
+      return allCaution.some(risk => item.includes(risk))
+    }).length
 
     // Count negative symptoms to penalize compliance
     const negativeSymptoms = meals.filter(meal => meal.type === 'symptom' &&
       (meal.feeling === 'Bloated' || meal.feeling === 'Heavy' || meal.feeling === 'Gassy' ||
        meal.feeling === 'Cramps' || meal.feeling === 'Reflux')).length
 
-    let adjustedScore = Math.round((1 - bloatRiskMeals.length / mealEntries.length) * 100)
+    let adjustedScore = Math.round((1 - cautionMeals / mealEntries.length) * 100)
 
     // Reduce score for negative symptoms - even if no "bad" foods were eaten
     if (negativeSymptoms > 0) {
@@ -238,8 +247,38 @@ const AIAnalysis = ({ meals, symptomCorrelations = [] }) => {
       recommendation = 'Focus on whole foods and avoid carbonated drinks to reduce bloating.'
     }
 
+    // Check for caution meals in today's log
+    const todayCautionMeals = meals.filter(meal => {
+      if (meal.type !== 'meal') return false
+      const item = meal.item?.toLowerCase() || ''
+      const cautionFoods = ['greasy', 'fried', 'processed', 'chips', 'crackers', 'bacon', 'ham', 'sausage', 'hot dog', 'salami', 'deli meat', 'canned soup', 'instant noodle', 'ramen', 'pretzel', 'popcorn', 'jerky', 'onion', 'garlic', 'wheat', 'bean', 'lentil', 'chickpea', 'kidney bean', 'broccoli', 'cabbage', 'cauliflower', 'brussels sprout', 'apple', 'pear', 'mango', 'peach', 'plum', 'cherry', 'apricot', 'watermelon', 'milk', 'yogurt', 'ice cream', 'soft cheese', 'honey', 'agave', 'artificial sweetener', 'soda', 'pop', 'coke', 'pepsi', 'sprite', 'fanta', 'mountain dew', 'dr pepper', 'carbonated', 'fizzy', 'sparkling water', 'seltzer', 'club soda', 'tonic water', 'alcohol', 'beer', 'wine', 'coffee', 'tea', 'chocolate', 'spicy', 'curry', 'hot sauce', 'pepper', 'cinnamon', 'fatty', 'greasy']
+      return cautionFoods.some(risk => item.includes(risk))
+    })
+
+    if (todayCautionMeals.length > 0) {
+      const cautionItem = todayCautionMeals[0].item
+      const alternatives = {
+        'greasy meat': 'grilled chicken or baked fish',
+        'fried food': 'baked or steamed vegetables',
+        'processed food': 'fresh vegetables or lean protein',
+        'chips': 'fresh fruit or nuts',
+        'soda': 'water or herbal tea',
+        'dairy': 'lactose-free alternatives',
+        'onion': 'celery or cucumber',
+        'garlic': 'herbs like basil or oregano',
+        'wheat': 'rice or quinoa',
+        'bean': 'rice or potatoes'
+      }
+
+      const alternative = Object.keys(alternatives).find(key => cautionItem.toLowerCase().includes(key)) ?
+        alternatives[Object.keys(alternatives).find(key => cautionItem.toLowerCase().includes(key))] :
+        'a lighter, whole-food alternative'
+
+      recommendation = `I noticed you logged "${cautionItem}" which can be tough on digestion. For your next meal, consider trying ${alternative} to see if it feels better.`
+    }
+
     // Check for high-percentage trigger foods (long-term patterns)
-    if (triggerFoods.length > 0 && triggerFoods[0].percentage >= 50) {
+    else if (triggerFoods.length > 0 && triggerFoods[0].percentage >= 50) {
       recommendation = `I noticed your Gut Score drops and your Feeling Score gets worse (yellow line in your chart) every time you log "${triggerFoods[0].item}". Try eliminating that for a week to see improvement.`
     }
 

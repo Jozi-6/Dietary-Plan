@@ -70,23 +70,39 @@ const BiologicalMetrics = ({ onMetricsUpdate }) => {
 
   const handleSave = () => {
     try {
-      if (height && weight) {
-        localStorage.setItem('gutcheck_height', height)
-        localStorage.setItem('gutcheck_weight', weight)
-        
-        const newEntry = {
-          date: new Date().toISOString(),
-          weight: parseFloat(weight),
-          height: parseFloat(height)
-        }
+      const newEntry = {
+        date: new Date().toISOString()
+      }
+
+      // Allow saving either height or weight individually
+      if (weight) {
+        newEntry.weight = parseFloat(weight)
+      }
+      if (height) {
+        newEntry.height = parseFloat(height)
+      }
+
+      // Only add to history if at least one metric is provided
+      if (weight || height) {
         const updatedHistory = [...weightHistory, newEntry]
         setWeightHistory(updatedHistory)
         localStorage.setItem('gutcheck_weight_history', JSON.stringify(updatedHistory))
-        
-        if (onMetricsUpdate) {
-          onMetricsUpdate({ height, weight, bmi, bmiCategory, weightHistory: updatedHistory })
-        }
       }
+
+      // Save individual metrics to localStorage
+      if (height) {
+        localStorage.setItem('gutcheck_height', height)
+      }
+      if (weight) {
+        localStorage.setItem('gutcheck_weight', weight)
+      }
+
+      // Notify parent component
+      onMetricsUpdate && onMetricsUpdate({
+        weightHistory: weightHistory
+      })
+
+      alert('Metrics saved successfully!')
     } catch (error) {
       console.error('Error saving metrics:', error)
     }
